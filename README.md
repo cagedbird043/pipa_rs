@@ -7,11 +7,11 @@
 </p>
 
 <p align="left">
-  <a href="https://github.com/cagedbird043/pipa-rs/blob/main/LICENSE">
+  <a href="https://github.com/cagedbird043/pipa_rs#license--许可证">
     <img src="https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg" alt="License">
   </a>
-  <a href="https://github.com/cagedbird043/pipa-rs/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/cagedbird043/pipa-rs/ci.yml?branch=main" alt="CI Status">
+  <a href="https://github.com/cagedbird043/pipa_rs/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/cagedbird043/pipa_rs/ci.yml?branch=main" alt="CI Status">
   </a>
 </p>
 
@@ -42,3 +42,12 @@ This project is licensed under either of
 - Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
   at your option.
+
+## Acknowledgments | 致谢
+
+This project is inspired by and is a complete rewrite of the original
+[PIPA](https://github.com/ZJU-SPAIL/pipa) project. We thank the original
+authors for their foundational work.
+
+本项目受到原始 [PIPA](https://github.com/ZJU-SPAIL/pipa) 项目启发，
+并是其完全重写版本。我们感谢原作者们的基础性工作。
