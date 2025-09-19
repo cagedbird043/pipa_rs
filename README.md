@@ -13,6 +13,9 @@
   <a href="https://github.com/cagedbird043/pipa_rs/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/cagedbird043/pipa_rs/ci.yml?branch=main" alt="CI Status">
   </a>
+  <a href="https://codecov.io/github/cagedbird043/pipa_rs" >
+ <img src="https://codecov.io/github/cagedbird043/pipa_rs/graph/badge.svg?token=XNIUCC5C55"/>
+ </a>
 </p>
 
 ---
