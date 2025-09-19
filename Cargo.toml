@@ -2,10 +2,9 @@
 resolver = "2" # 推荐使用最新的 resolver
 members = [
     "crates/pipa_cli",
-    # "crates/pipa_collector", # 占位，为未来 crate 预留
-    # "crates/pipa_parser",
-    # "crates/pipa_core",
-    # "crates/pipad_server",
+    "crates/pipa_collector",
+    "crates/pipa_core",
+    "crates/pipa_parser",
 ]
 
 [workspace.package]
