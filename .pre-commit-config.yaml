@@ -11,6 +11,5 @@ repos:
     rev: v1.0
     hooks:
       - id: fmt
-        args: ["--all"]
       - id: clippy
         args: ["--all-targets", "--", "-D", "warnings"]
