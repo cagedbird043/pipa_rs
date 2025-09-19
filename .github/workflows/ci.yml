@@ -11,21 +11,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test:
-    name: Build & Test
+  check_and_lint:
+    name: Check & Lint
     runs-on: ubuntu-latest
     steps:
-      # 1. Check out the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install the Rust toolchain with rustfmt and clippy
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
 
-      # 3. Cache Cargo dependencies to speed up subsequent builds
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
@@ -35,20 +32,43 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.lock') }}
 
-      # 4. Check formatting
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      # 5. Run Clippy linter. -D warnings treats all warnings as errors.
       - name: Run Clippy
         run: cargo clippy --all-targets -- -D warnings
 
-      # 6. Build the project in debug mode
-      - name: Build project
-        run: cargo build --all-targets --verbose
+  test_and_coverage:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 7. Run tests
-      - name: Run tests
-        run: cargo test --all-targets --verbose
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run tests and generate coverage report
+        run: cargo tarpaulin --verbose --all-targets --workspace --out Xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true

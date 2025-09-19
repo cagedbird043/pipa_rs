@@ -40,32 +40,32 @@ The project will be developed in incremental, feature-focused milestones.
 _Goal: Establish a robust, modern, and automated development environment to ensure high code quality and smooth collaboration from day one._
 _目标：建立一个健壮、现代化、自动化的开发环境，从第一天起就确保高质量的代码和顺畅的协作。_
 
-- [ ] **Task 0.1: Project Structure and Git Discipline | 任务 0.1：项目结构与 Git 纪律**
+- [x] **Task 0.1: Project Structure and Git Discipline | 任务 0.1：项目结构与 Git 纪律**
 
-  - [ ] **Initialize Cargo Workspace**: Create the workspace with the initial crates: `pipa_collector`, `pipa_parser`, `pipa_core`, `pipa_cli`, `pipad_server`. | **初始化 Cargo 工作空间**：创建包含初始 crate 的工作空间。
-  - [ ] **Define Git Workflow**: Adopt a clear branching model (e.g., GitFlow or a simpler Trunk-Based Development with feature branches). | **定义 Git 工作流**：采用清晰的分支模型（如 GitFlow 或更简单的基于主干的开发模型）。
-  - [ ] **Establish Commit Message Convention**: Enforce the [Conventional Commits](https://www.conventionalcommits.org/) standard (e.g., `feat:`, `fix:`, `docs:`, `chore:`). Use a tool like `commitizen` or `cocogitto` to standardize this. | **建立提交信息规范**：强制使用“约定式提交”标准。
+  - [x] **Initialize Cargo Workspace**: Create the workspace with the initial crates: `pipa_collector`, `pipa_parser`, `pipa_core`, `pipa_cli`, `pipad_server`. | **初始化 Cargo 工作空间**：创建包含初始 crate 的工作空间。
+  - [x] **Define Git Workflow**: Adopt a clear branching model (e.g., GitFlow or a simpler Trunk-Based Development with feature branches). | **定义 Git 工作流**：采用清晰的分支模型（如 GitFlow 或更简单的基于主干的开发模型）。
+  - [x] **Establish Commit Message Convention**: Enforce the [Conventional Commits](https://www.conventionalcommits.org/) standard (e.g., `feat:`, `fix:`, `docs:`, `chore:`). Use a tool like `commitizen` or `cocogitto` to standardize this. | **建立提交信息规范**：强制使用“约定式提交”标准。
   - [x] **Setup `.gitignore`**: Create a comprehensive `.gitignore` file for Rust projects. | **设置 `.gitignore`**：为 Rust 项目创建全面的 `.gitignore` 文件。
   - [x] **Create Project Documentation**:
-    - [ ] `README.md`: High-level project description, quick start, and contribution guidelines.
-    - [ ] `CONTRIBUTING.md`: Detailed instructions for contributors (setup, workflow, code of conduct).
-    - [ ] `ROADMAP.md`: This document.
-    - [ ] Choose a license (e.g., MIT / Apache 2.0).
+    - [x] `README.md`: High-level project description, quick start, and contribution guidelines.
+    - [x] `CONTRIBUTING.md`: Detailed instructions for contributors (setup, workflow, code of conduct).
+    - [x] `ROADMAP.md`: This document.
+    - [x] Choose a license (e.g., MIT / Apache 2.0).
 
-- [ ] **Task 0.2: Code Style and Quality | 任务 0.2：代码风格与质量**
+- [x] **Task 0.2: Code Style and Quality | 任务 0.2：代码风格与质量**
 
-  - [ ] **Setup `rustfmt`**: Configure `rustfmt.toml` to define the project's code formatting style. All code must be formatted with `rustfmt` before committing. | **配置 `rustfmt`**：配置 `rustfmt.toml` 文件以定义项目的代码格式化风格。
-  - [ ] **Setup `clippy`**: Configure `clippy.toml` for linting. Clippy provides a huge number of lints to catch common mistakes and improve code idioms. The CI will enforce zero clippy warnings. | **配置 `clippy`**：配置 `clippy.toml` 进行代码检查。CI 将强制要求零 clippy 警告。
+  - [x] **Setup `rustfmt`**: Configure `rustfmt.toml` to define the project's code formatting style. All code must be formatted with `rustfmt` before committing. | **配置 `rustfmt`**：配置 `rustfmt.toml` 文件以定义项目的代码格式化风格。
+  - [x] **Setup `clippy`**: Configure `clippy.toml` for linting. Clippy provides a huge number of lints to catch common mistakes and improve code idioms. The CI will enforce zero clippy warnings. | **配置 `clippy`**：配置 `clippy.toml` 进行代码检查。CI 将强制要求零 clippy 警告。
   - [ ] **Add EditorConfig**: Include an `.editorconfig` file to maintain consistent coding styles across different editors and IDEs.
 
-- [ ] **Task 0.3: CI/CD Pipeline Setup | 任务 0.3：CI/CD 流水线搭建**
+- [x] **Task 0.3: CI/CD Pipeline Setup | 任务 0.3：CI/CD 流水线搭建**
 
-  - [ ] **Choose a CI Platform**: Use GitHub Actions (free for public repos and highly recommended) or GitLab CI. | **选择 CI 平台**：使用 GitHub Actions 或 GitLab CI。
-  - [ ] **Create the Initial CI Workflow (`ci.yml`)**: This workflow will run on every push and pull request.
-    - [ ] **Job 1: Format & Lint Check**:
+  - [x] **Choose a CI Platform**: Use GitHub Actions (free for public repos and highly recommended) or GitLab CI. | **选择 CI 平台**：使用 GitHub Actions 或 GitLab CI。
+  - [x] **Create the Initial CI Workflow (`ci.yml`)**: This workflow will run on every push and pull request.
+    - [x] **Job 1: Format & Lint Check**:
       - Run `cargo fmt -- --check` to ensure all code is formatted.
       - Run `cargo clippy -- -D warnings` to fail the build on any warnings.
-    - [ ] **Job 2: Build & Test**:
+    - [x] **Job 2: Build & Test**:
       - Run `cargo build --all-targets` to ensure all crates compile.
       - Run `cargo test --all-targets` to execute all unit and integration tests.
     - [ ] **(Optional but Recommended) Setup Code Coverage**: Integrate `cargo-tarpaulin` or `grcov` to measure test coverage and upload reports to a service like [Codecov](https://codecov.io/).
@@ -75,8 +75,8 @@ _目标：建立一个健壮、现代化、自动化的开发环境，从第一�
     - [ ] Upload the binaries to the GitHub Release.
     - [ ] (Future) Publish the library crates to `crates.io`.
 
-- [ ] **Task 0.4: Development Tooling | 任务 0.4：开发工具**
-  - [ ] **Setup Pre-commit Hooks**: Use a tool like `pre-commit` with Rust hooks to automatically run `cargo fmt` and `cargo clippy` before a commit is created. This catches issues locally before they ever reach CI. | **设置 Pre-commit 钩子**：在提交前自动运行 `cargo fmt` 和 `cargo clippy`。
+- [x] **Task 0.4: Development Tooling | 任务 0.4：开发工具**
+  - [x] **Setup Pre-commit Hooks**: Use a tool like `pre-commit` with Rust hooks to automatically run `cargo fmt` and `cargo clippy` before a commit is created. This catches issues locally before they ever reach CI. | **设置 Pre-commit 钩子**：在提交前自动运行 `cargo fmt` 和 `cargo clippy`。
 
 **Acceptance Criteria for M0** | **M0 的验收标准**:
 
