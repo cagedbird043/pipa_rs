@@ -2,5 +2,11 @@
 name = "pipa_rs"
 version = "0.1.0"
 edition = "2021"
+authors = ["cagedbird043"]
+license = "MIT OR Apache-2.0"
+description = "A Native Performance Analytics Toolchain for Linux, built in Rust"
+repository = "https://github.com/cagedbird043/pipa_rs"
+keywords = ["performance", "profiling", "linux", "perf", "analysis"]
+categories = ["development-tools::profiling"]
 
 [dependencies]
