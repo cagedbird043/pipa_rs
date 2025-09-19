@@ -68,7 +68,7 @@ _目标：建立一个健壮、现代化、自动化的开发环境，从第一�
     - [x] **Job 2: Build & Test**:
       - Run `cargo build --all-targets` to ensure all crates compile.
       - Run `cargo test --all-targets` to execute all unit and integration tests.
-    - [ ] **(Optional but Recommended) Setup Code Coverage**: Integrate `cargo-tarpaulin` or `grcov` to measure test coverage and upload reports to a service like [Codecov](https://codecov.io/).
+    - [x] **(Optional but Recommended) Setup Code Coverage**: Integrate `cargo-tarpaulin` or `grcov` to measure test coverage and upload reports to a service like [Codecov](https://codecov.io/).
   - [ ] **Create a Release Workflow (`release.yml`)**: This workflow will trigger on creating a new Git tag (e.g., `v0.1.0`).
     - [ ] Build release artifacts (optimized, stripped binaries) for different targets (e.g., `x86_64-unknown-linux-gnu`).
     - [ ] Automatically create a GitHub Release.
