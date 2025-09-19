@@ -1,12 +1,24 @@
-[package]
-name = "pipa_rs"
+[workspace]
+resolver = "2" # 推荐使用最新的 resolver
+members = [
+    "crates/pipa_cli",
+    # "crates/pipa_collector", # 占位，为未来 crate 预留
+    # "crates/pipa_parser",
+    # "crates/pipa_core",
+    # "crates/pipad_server",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 authors = ["cagedbird043"]
 license = "MIT OR Apache-2.0"
-description = "A Native Performance Analytics Toolchain for Linux, built in Rust"
 repository = "https://github.com/cagedbird043/pipa_rs"
 keywords = ["performance", "profiling", "linux", "perf", "analysis"]
 categories = ["development-tools::profiling"]
 
-[dependencies]
+[workspace.dependencies]
+# 在这里定义所有 crate 共享的依赖，方便统一管理版本
+# 例如:
+# anyhow = "1.0"
+# log = "0.4"

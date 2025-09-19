@@ -1,0 +1,11 @@
+[package]
+name = "pipa_rs"                                                                        # 最终的可执行文件名将是 pipa-rs
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A Native Performance Analytics Toolchain for Linux, built in Rust (CLI)"
+
+[dependencies]
+# 这里可以添加 pipa_cli 特有的依赖
