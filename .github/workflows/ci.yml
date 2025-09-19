@@ -21,7 +21,7 @@ jobs:
 
       # 2. Install the Rust toolchain with rustfmt and clippy
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain-action@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
 
