@@ -1,0 +1,18 @@
+# A reasonably opinionated rustfmt configuration
+version = "Two"
+
+# Set the maximum line length to 100 characters.
+max_width = 100
+
+# Use a higher heuristic quality for formatting complex expressions.
+# Tends to produce more readable code for nested structures.
+use_small_heuristics = "Max"
+
+# Automatically reorder `use` statements for consistency.
+# This groups std, extern, and local modules.
+reorder_imports = true
+
+# Place comments on a separate line before the item they document.
+# `fn foo() { // comment }` becomes `// comment \n fn foo() {}`
+comment_width = 80
+wrap_comments = true
