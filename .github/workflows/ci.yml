@@ -61,7 +61,15 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install cargo-tarpaulin
+      - name: Cache cargo-tarpaulin
+        id: cache-tarpaulin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-tarpaulin
+          key: ${{ runner.os }}-cargo-tarpaulin-v1
+
+      - name: Install cargo-tarpaulin if not cached
+        if: steps.cache-tarpaulin.outputs.cache-hit != 'true'
         run: cargo install cargo-tarpaulin
 
       - name: Run tests and generate coverage report
