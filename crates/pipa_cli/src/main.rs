@@ -18,7 +18,17 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use std::{thread, time::Duration};
+use crossterm::{
+    cursor,
+    event::{self, Event, KeyCode},
+    execute, queue, style,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+};
+use pipa_collector::system_stats::{CpuStats, MemoryStats};
+use std::{
+    io::{Stdout, Write, stdout},
+    time::Duration,
+};
 
 /// A Native Performance Analytics Toolchain for Linux, built in Rust.
 #[derive(Parser, Debug)]
@@ -40,45 +50,143 @@ enum Commands {
     },
 }
 
+/// Helper function to set up the terminal for TUI mode.
+/// 设置终端进入 TUI 模式的辅助函数。
+fn setup_terminal() -> Result<Stdout> {
+    let mut stdout = stdout();
+    enable_raw_mode()?;
+    execute!(stdout, EnterAlternateScreen, cursor::Hide)?;
+    Ok(stdout)
+}
+
+/// Helper function to restore the terminal to its original state.
+/// 恢复终端至原始状态的辅助函数。
+fn restore_terminal(stdout: &mut Stdout) -> Result<()> {
+    execute!(stdout, LeaveAlternateScreen, cursor::Show)?;
+    disable_raw_mode()?;
+    Ok(())
+}
+
+/// Main application logic for the monitor subcommand.
+/// `monitor` 子命令的主应用逻辑。
+fn run_monitor(interval: u64) -> Result<()> {
+    let mut stdout = setup_terminal()?;
+    let mut prev_stats: Option<CpuStats> = None;
+    let tick_rate = Duration::from_millis(interval * 1000);
+
+    loop {
+        let current_stats = pipa_collector::system_stats::read_cpu_stats()?;
+        let mem_stats = pipa_collector::system_stats::read_memory_stats()?;
+
+        let cpu_usage_percent = if let Some(prev) = prev_stats {
+            calculate_cpu_usage(&prev, &current_stats)
+        } else {
+            0.0
+        };
+        prev_stats = Some(current_stats);
+
+        // Pass stdout to the drawing function to give it drawing capabilities.
+        draw_ui(&mut stdout, interval, cpu_usage_percent, &mem_stats)?;
+
+        if event::poll(tick_rate)? {
+            if let Event::Key(key) = event::read()? {
+                if key.code == KeyCode::Char('q') {
+                    break;
+                }
+            }
+        }
+    }
+
+    restore_terminal(&mut stdout)?;
+    Ok(())
+}
+
+/// Renders the UI frame to the terminal using absolute cursor positioning.
+/// 使用绝对光标定位将 UI 帧渲染到终端。
+fn draw_ui(
+    stdout: &mut Stdout,
+    interval: u64,
+    cpu_usage: f64,
+    mem_stats: &MemoryStats,
+) -> Result<()> {
+    let mem_used_gib = (mem_stats.total - mem_stats.available) as f64 / 1024.0 / 1024.0;
+    let mem_available_gib = mem_stats.available as f64 / 1024.0 / 1024.0;
+    let mem_total_gib = mem_stats.total as f64 / 1024.0 / 1024.0;
+
+    // queue! batches commands for performance, then flush() writes them all at once.
+    // queue! 批量处理命令以提高性能，然后 flush() 一次性将它们全部写入。
+    queue!(
+        stdout,
+        // First, clear the entire screen.
+        style::Print("\x1B[2J"),
+        // --- Draw Title ---
+        cursor::MoveTo(0, 0),
+        style::Print(format!(
+            "--- PIPA-rs Live Monitor (Interval: {}s, Press 'q' to exit) ---",
+            interval
+        )),
+        // --- Draw CPU Section ---
+        cursor::MoveTo(2, 2),
+        style::Print("[ CPU Usage ]"),
+        cursor::MoveTo(2, 3),
+        style::Print(format!(
+            "[{:<20}] {:.2}%",
+            "█".repeat((cpu_usage / 5.0).round() as usize),
+            cpu_usage
+        )),
+        // --- Draw Memory Section ---
+        cursor::MoveTo(2, 5),
+        style::Print("[ Memory Usage ]"),
+        cursor::MoveTo(2, 6),
+        style::Print(format!("{:<12} {:>10.2} GiB", "Used:", mem_used_gib)),
+        cursor::MoveTo(2, 7),
+        style::Print(format!("{:<12} {:>10.2} GiB", "Available:", mem_available_gib)),
+        cursor::MoveTo(2, 8),
+        style::Print(format!("{:<12} {:>10.2} GiB", "Total:", mem_total_gib)),
+    )?;
+
+    // This is the crucial step that draws everything queued above.
+    // 这是绘制上面队列中所有内容的关键步骤。
+    stdout.flush()?;
+
+    Ok(())
+}
+
+fn calculate_cpu_usage(prev: &CpuStats, current: &CpuStats) -> f64 {
+    let prev_idle = prev.idle + prev.iowait;
+    let current_idle = current.idle + current.iowait;
+
+    let prev_non_idle = prev.user + prev.nice + prev.system + prev.irq + prev.softirq + prev.steal;
+    let current_non_idle = current.user
+        + current.nice
+        + current.system
+        + current.irq
+        + current.softirq
+        + current.steal;
+
+    let prev_total = prev_idle + prev_non_idle;
+    let current_total = current_idle + current_non_idle;
+
+    let total_delta = (current_total - prev_total) as f64;
+    let idle_delta = (current_idle - prev_idle) as f64;
+
+    if total_delta == 0.0 {
+        0.0
+    } else {
+        let usage_percent = (1.0 - idle_delta / total_delta) * 100.0;
+        // Clamp between 0 and 100 in case of weird edge cases
+        usage_percent.clamp(0.0, 100.0)
+    }
+}
+
 #[cfg(not(tarpaulin_include))]
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Monitor { interval } => {
-            println!("Starting PIPA-rs monitor... Press Ctrl+C to exit.");
-            thread::sleep(Duration::from_secs(1)); // Give user time to read the message
-
-            loop {
-                // 1. 调用 collector
-                let cpu_stats = pipa_collector::system_stats::read_cpu_stats()?;
-                let mem_stats = pipa_collector::system_stats::read_memory_stats()?;
-
-                // 2. 清理屏幕 (ANSI escape code)
-                // \x1B[2J: 清除整个屏幕
-                // \x1B[1;1H: 将光标移动到第 1 行第 1 列
-                print!("\x1B[2J\x1B[1;1H");
-
-                // 3. 格式化并打印输出
-                println!("--- PIPA-rs Live Monitor (Interval: {}s) ---", interval);
-                println!();
-                println!("[ CPU Usage (jiffies since boot) ]");
-                println!(
-                    "  User: {:<12}   System: {:<12}   Idle: {:<12}",
-                    cpu_stats.user, cpu_stats.system, cpu_stats.idle
-                );
-                println!();
-                println!("[ Memory Usage (kB) ]");
-                println!(
-                    "  Total: {:<12}   Available: {:<12}   Free: {:<12}",
-                    mem_stats.total, mem_stats.available, mem_stats.free
-                );
-                println!("  Cached: {:<12}", mem_stats.cached);
-                println!("\n(Press Ctrl+C to exit)");
-
-                // 4. 等待下一个周期
-                thread::sleep(Duration::from_secs(interval));
-            }
+            run_monitor(interval)?;
         }
     }
+    Ok(())
 }
