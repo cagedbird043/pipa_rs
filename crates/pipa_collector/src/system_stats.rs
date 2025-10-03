@@ -134,18 +134,27 @@ fn parse_cpu_stats_from_line(line: &str) -> Result<CpuStats, PipaCollectorError>
     Ok(stats)
 }
 
-/// Reads and parses aggregated CPU statistics from the `/proc/stat` file.
+/// Reads content from a given path and calls the CPU stats parser.
 /// This is the main public entry point for this functionality.
 ///
-/// 从 `/proc/stat` 文件中读取并解析聚合的 CPU 统计信息。
+/// 从给定路径中读取并解析聚合的 CPU 统计信息。
 /// 这是该功能的主要公共入口点。
-pub fn read_cpu_stats() -> Result<CpuStats, PipaCollectorError> {
-    let content = std::fs::read_to_string("/proc/stat")?;
+fn read_cpu_stats_from_path<P: AsRef<std::path::Path>>(
+    path: P,
+) -> Result<CpuStats, PipaCollectorError> {
+    let content = std::fs::read_to_string(path)?;
+    #[cfg(not(tarpaulin_include))]
     let first_line = content.lines().next().ok_or_else(|| {
-        PipaCollectorError::InvalidFormat("Cannot read first line from /proc/stat".to_string())
+        PipaCollectorError::InvalidFormat("Cannot read first line from file".to_string())
     })?;
-
     parse_cpu_stats_from_line(first_line)
+}
+
+/// Reads and parses aggregated CPU statistics from the `/proc/stat` file.
+/// 现在这个函数只是一个简单的包装器。
+#[cfg(not(tarpaulin_include))]
+pub fn read_cpu_stats() -> Result<CpuStats, PipaCollectorError> {
+    read_cpu_stats_from_path("/proc/stat")
 }
 
 /// Holds key memory statistics from `/proc/meminfo`.
@@ -227,12 +236,20 @@ fn parse_memory_stats_from_content(content: &str) -> Result<MemoryStats, PipaCol
     Ok(stats)
 }
 
-/// Reads and parses key memory statistics from the `/proc/meminfo` file.
-///
-/// 从 `/proc/meminfo` 文件中读取并解析关键的内存统计信息。
-pub fn read_memory_stats() -> Result<MemoryStats, PipaCollectorError> {
-    let content = std::fs::read_to_string("/proc/meminfo")?;
+/// Reads content from a given path and calls the memory stats parser.
+/// 通过将路径作为参数，使 I/O 操作变得可测试。
+fn read_memory_stats_from_path<P: AsRef<std::path::Path>>(
+    path: P,
+) -> Result<MemoryStats, PipaCollectorError> {
+    let content = std::fs::read_to_string(path)?;
     parse_memory_stats_from_content(&content)
+}
+
+/// Reads and parses key memory statistics from the `/proc/meminfo` file.
+/// 现在这个函数只是一个简单的包装器。
+#[cfg(not(tarpaulin_include))]
+pub fn read_memory_stats() -> Result<MemoryStats, PipaCollectorError> {
+    read_memory_stats_from_path("/proc/meminfo")
 }
 
 #[cfg(test)]
@@ -329,5 +346,45 @@ mod tests {
         let result = parse_memory_stats_from_content(content);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), PipaCollectorError::MissingData(_)));
+    }
+
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+    /// Test sections for I/O functions
+    #[test]
+    fn test_read_cpu_stats_from_path_happy_path() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "cpu  74608 2520 24433 1117073 6176 4054 0 0 0 0").unwrap();
+
+        let stats = read_cpu_stats_from_path(file.path()).unwrap();
+        assert_eq!(stats.user, 74608);
+    }
+
+    #[test]
+    fn test_read_cpu_stats_io_error() {
+        let result = read_cpu_stats_from_path("/a/non/existent/path");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), PipaCollectorError::Io(_)));
+    }
+
+    #[test]
+    fn test_read_memory_stats_from_path_happy_path() {
+        let mut file = NamedTempFile::new().unwrap();
+        let content = "MemTotal:       1000 kB\n\
+                       MemFree:        500 kB\n\
+                       MemAvailable:   800 kB\n\
+                       Buffers:        50 kB\n\
+                       Cached:         200 kB";
+        write!(file, "{}", content).unwrap();
+
+        let stats = read_memory_stats_from_path(file.path()).unwrap();
+        assert_eq!(stats.total, 1000);
+    }
+
+    #[test]
+    fn test_read_memory_stats_io_error() {
+        let result = read_memory_stats_from_path("/another/non/existent/path");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), PipaCollectorError::Io(_)));
     }
 }

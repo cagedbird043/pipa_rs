@@ -73,13 +73,7 @@ jobs:
         run: cargo install cargo-tarpaulin
 
       - name: Run tests and generate coverage report
-        run: >
-          cargo tarpaulin --verbose --all-targets --workspace
-          --exclude pipa_parser
-          --exclude pipa_core
-          --exclude pipad_server
-          --exclude pipa_rs
-          --out Xml
+        run: cargo tarpaulin --verbose --all-targets --workspace --out Xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

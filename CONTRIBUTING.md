@@ -72,12 +72,7 @@ From now on, `cargo fmt` and `cargo clippy` will run automatically every time yo
     cargo install cargo-tarpaulin
 
     # 2. Run coverage analysis, excluding placeholder crates
-    cargo tarpaulin --workspace \
-    --exclude pipa_parser \
-    --exclude pipa_core \
-    --exclude pipad_server \
-    --exclude pipa_rs \
-    --out Html
+    cargo tarpaulin --workspace --out Html
 
     # 3. Open the report in your browser
     # The main file is tarpaulin-report.html in the project root.

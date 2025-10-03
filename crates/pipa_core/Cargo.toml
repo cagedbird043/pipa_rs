@@ -9,3 +9,6 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

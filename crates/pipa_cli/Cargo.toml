@@ -9,3 +9,6 @@ description = "A Native Performance Analytics Toolchain for Linux, built in Rust
 
 [dependencies]
 # 这里可以添加 pipa_cli 特有的依赖
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

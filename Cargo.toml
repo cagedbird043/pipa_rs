@@ -5,6 +5,7 @@ members = [
     "crates/pipa_collector",
     "crates/pipa_core",
     "crates/pipa_parser",
+    "crates/pipad_server",
 ]
 
 [workspace.package]

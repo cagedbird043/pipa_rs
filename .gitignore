@@ -27,3 +27,5 @@ Thumbs.db
 
 # Local configuration
 .env
+tarpaulin-report.html
+cobertura.xml
