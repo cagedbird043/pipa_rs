@@ -8,7 +8,12 @@ repository.workspace = true
 description = "A Native Performance Analytics Toolchain for Linux, built in Rust (CLI)"
 
 [dependencies]
-# 这里可以添加 pipa_cli 特有的依赖
+# 让我们的 CLI 可以调用 collector 中的函数
+pipa_collector = { path = "../pipa_collector" }
+# 强大的命令行参数解析库
+clap = { version = "4.5", features = ["derive"] }
+# 优雅的应用程序级错误处理
+anyhow = "1.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

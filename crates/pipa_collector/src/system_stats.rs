@@ -18,6 +18,7 @@
 //! 本模块负责通过解析 `/proc` 文件系统来收集系统级统计信息。
 //! 它的功能是替代像 `sar` 这样的工具。
 
+use std::fmt;
 use std::io;
 use std::num::ParseIntError;
 
@@ -40,6 +41,31 @@ pub enum PipaCollectorError {
     /// Represents missing data where it was expected.
     /// 代表在预期位置缺少数据。
     MissingData(String),
+}
+
+/// Custom implementation to provide human-readable error messages.
+/// 为了提供人类可读的错误信息，我们实现了自定义的 Display。
+impl fmt::Display for PipaCollectorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PipaCollectorError::Io(e) => write!(f, "I/O error: {}", e),
+            PipaCollectorError::Parse(e) => write!(f, "Parse error: {}", e),
+            PipaCollectorError::InvalidFormat(msg) => write!(f, "Invalid format: {}", msg),
+            PipaCollectorError::MissingData(msg) => write!(f, "Missing data: {}", msg),
+        }
+    }
+}
+
+/// Implementing the standard Error trait for interoperability with other error types.
+/// 为了与其他错误类型互操作，我们实现了标准的 Error trait。
+impl std::error::Error for PipaCollectorError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            PipaCollectorError::Io(e) => Some(e),
+            PipaCollectorError::Parse(e) => Some(e),
+            _ => None,
+        }
+    }
 }
 
 // Boilerplate to allow easy conversion from standard errors using the `?` operator.
