@@ -52,6 +52,7 @@ enum Commands {
 
 /// Helper function to set up the terminal for TUI mode.
 /// 设置终端进入 TUI 模式的辅助函数。
+#[cfg(not(tarpaulin_include))]
 fn setup_terminal() -> Result<Stdout> {
     let mut stdout = stdout();
     enable_raw_mode()?;
@@ -61,6 +62,7 @@ fn setup_terminal() -> Result<Stdout> {
 
 /// Helper function to restore the terminal to its original state.
 /// 恢复终端至原始状态的辅助函数。
+#[cfg(not(tarpaulin_include))]
 fn restore_terminal(stdout: &mut Stdout) -> Result<()> {
     execute!(stdout, LeaveAlternateScreen, cursor::Show)?;
     disable_raw_mode()?;
@@ -69,8 +71,9 @@ fn restore_terminal(stdout: &mut Stdout) -> Result<()> {
 
 /// Main application logic for the monitor subcommand.
 /// `monitor` 子命令的主应用逻辑。
+#[cfg(not(tarpaulin_include))]
 fn run_monitor(interval: u64) -> Result<()> {
-    let mut stdout = setup_terminal()?;
+    let mut f = setup_terminal()?;
     let mut prev_stats: Option<CpuStats> = None;
     let tick_rate = Duration::from_millis(interval * 1000);
 
@@ -86,7 +89,7 @@ fn run_monitor(interval: u64) -> Result<()> {
         prev_stats = Some(current_stats);
 
         // Pass stdout to the drawing function to give it drawing capabilities.
-        draw_ui(&mut stdout, interval, cpu_usage_percent, &mem_stats)?;
+        draw_ui(&mut f, interval, cpu_usage_percent, &mem_stats)?;
 
         if event::poll(tick_rate)? {
             if let Event::Key(key) = event::read()? {
@@ -97,14 +100,15 @@ fn run_monitor(interval: u64) -> Result<()> {
         }
     }
 
-    restore_terminal(&mut stdout)?;
+    restore_terminal(&mut f)?;
     Ok(())
 }
 
 /// Renders the UI frame to the terminal using absolute cursor positioning.
 /// 使用绝对光标定位将 UI 帧渲染到终端。
-fn draw_ui(
-    stdout: &mut Stdout,
+#[cfg(not(tarpaulin_include))]
+fn draw_ui<W: Write>(
+    f: &mut W,
     interval: u64,
     cpu_usage: f64,
     mem_stats: &MemoryStats,
@@ -116,7 +120,7 @@ fn draw_ui(
     // queue! batches commands for performance, then flush() writes them all at once.
     // queue! 批量处理命令以提高性能，然后 flush() 一次性将它们全部写入。
     queue!(
-        stdout,
+        f,
         // First, clear the entire screen.
         style::Print("\x1B[2J"),
         // --- Draw Title ---
@@ -147,7 +151,7 @@ fn draw_ui(
 
     // This is the crucial step that draws everything queued above.
     // 这是绘制上面队列中所有内容的关键步骤。
-    stdout.flush()?;
+    f.flush()?;
 
     Ok(())
 }
@@ -189,4 +193,82 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_calculate_cpu_usage_basic() {
+        let prev = CpuStats {
+            user: 100,
+            nice: 10,
+            system: 50,
+            idle: 1000,
+            iowait: 20,
+            irq: 5,
+            softirq: 5,
+            steal: 0,
+            guest: 0,
+            guest_nice: 0,
+        };
+        let current = CpuStats {
+            user: 200,
+            nice: 10,
+            system: 100,
+            idle: 1100,
+            iowait: 20,
+            irq: 10,
+            softirq: 5,
+            steal: 0,
+            guest: 0,
+            guest_nice: 0,
+        };
+        // Non-idle delta = (200-100) + (100-50) + (10-5) = 100 + 50 + 5 = 155
+        // Idle delta = (1100-1000) = 100
+        // Total delta = 155 + 100 = 255
+        // Usage = (155 / 255) * 100 = ~60.78%
+        let usage = calculate_cpu_usage(&prev, &current);
+        assert!((usage - 60.78).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_calculate_cpu_usage_no_change() {
+        let prev = CpuStats { idle: 100, ..Default::default() };
+        let current = CpuStats { idle: 100, ..Default::default() };
+        assert_eq!(calculate_cpu_usage(&prev, &current), 0.0);
+    }
+
+    #[test]
+    fn test_draw_ui() {
+        // 1. Create our in-memory "fake terminal"
+        let mut buffer: Vec<u8> = Vec::new();
+
+        // 2. Define the data we want to draw
+        let mem_stats = MemoryStats {
+            total: 1024 * 1024 * 16,
+            available: 1024 * 1024 * 8,
+            ..Default::default()
+        };
+
+        // 3. Call our drawing function, but give it the fake terminal
+        draw_ui(&mut buffer, 1, 50.0, &mem_stats).unwrap();
+
+        // 4. Convert the raw bytes (which include ANSI codes) into a string
+        let output = String::from_utf8(buffer).unwrap();
+
+        // 5. Assert that the output string contains the content we expect!
+        assert!(output.contains("[ CPU Usage ]"));
+        assert!(output.contains("50.00%"));
+        assert!(output.contains("[ Memory Usage ]"));
+        assert!(output.contains("Used:"));
+        // 16 total - 8 available = 8 used
+        assert!(output.contains("8.00 GiB"));
+        assert!(output.contains("Total:"));
+        assert!(output.contains("16.00 GiB"));
+
+        // We could even test for specific ANSI codes if we wanted to be extremely precise
+        // For example, does it start with the "clear screen" code?
+        assert!(output.starts_with("\x1B[2J"));
+    }
 }

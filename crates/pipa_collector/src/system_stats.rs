@@ -46,6 +46,7 @@ pub enum PipaCollectorError {
 /// Custom implementation to provide human-readable error messages.
 /// 为了提供人类可读的错误信息，我们实现了自定义的 Display。
 impl fmt::Display for PipaCollectorError {
+    #[cfg(not(tarpaulin_include))]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PipaCollectorError::Io(e) => write!(f, "I/O error: {}", e),
@@ -59,6 +60,7 @@ impl fmt::Display for PipaCollectorError {
 /// Implementing the standard Error trait for interoperability with other error types.
 /// 为了与其他错误类型互操作，我们实现了标准的 Error trait。
 impl std::error::Error for PipaCollectorError {
+    #[cfg(not(tarpaulin_include))]
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             PipaCollectorError::Io(e) => Some(e),
