@@ -148,10 +148,97 @@ pub fn read_cpu_stats() -> Result<CpuStats, PipaCollectorError> {
     parse_cpu_stats_from_line(first_line)
 }
 
+/// Holds key memory statistics from `/proc/meminfo`.
+/// All values are in kilobytes (kB).
+///
+/// 存储从 `/proc/meminfo` 中获取的关键内存统计信息。
+/// 所有值的单位都是千字节 (kB)。
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+pub struct MemoryStats {
+    /// Total usable RAM. / 总可用 RAM。
+    pub total: u64,
+    /// RAM left unused by the system. / 系统未使用的 RAM。
+    pub free: u64,
+    /// An estimate of how much memory is available for starting new applications, without swapping.
+    /// 可用于启动新应用程序的估计内存量（无需交换）。
+    pub available: u64,
+    /// Memory used by block device buffers. / 块设备缓冲区使用的内存。
+    pub buffers: u64,
+    /// Memory used by the page cache. / 页面缓存使用的内存。
+    pub cached: u64,
+}
+
+/// Parses memory statistics from the content of a `/proc/meminfo`-like string.
+/// This pure function is kept private to facilitate easy unit testing.
+///
+/// 从类似 `/proc/meminfo` 的字符串内容中解析内存统计信息。
+/// 这个纯函数保持私有，以便于单元测试。
+fn parse_memory_stats_from_content(content: &str) -> Result<MemoryStats, PipaCollectorError> {
+    let mut stats = MemoryStats::default();
+    let mut found_count = 0;
+    const TOTAL_FIELDS: u8 = 5;
+
+    for line in content.lines() {
+        let mut parts = line.split_whitespace();
+        let key = parts.next().unwrap_or("");
+        let value_str = parts.next().unwrap_or("");
+
+        let value = match value_str.parse::<u64>() {
+            Ok(v) => v,
+            Err(_) => continue, // If the second part isn't a number, skip this line.
+        };
+
+        match key {
+            "MemTotal:" => {
+                stats.total = value;
+                found_count += 1;
+            }
+            "MemFree:" => {
+                stats.free = value;
+                found_count += 1;
+            }
+            "MemAvailable:" => {
+                stats.available = value;
+                found_count += 1;
+            }
+            "Buffers:" => {
+                stats.buffers = value;
+                found_count += 1;
+            }
+            "Cached:" => {
+                stats.cached = value;
+                found_count += 1;
+            }
+            _ => { /* We don't care about other keys */ }
+        }
+
+        // Optimization: if we've found all our fields, we can stop parsing.
+        if found_count >= TOTAL_FIELDS {
+            break;
+        }
+    }
+
+    if found_count < TOTAL_FIELDS {
+        return Err(PipaCollectorError::MissingData(
+            "Could not find all required memory fields in /proc/meminfo".to_string(),
+        ));
+    }
+
+    Ok(stats)
+}
+
+/// Reads and parses key memory statistics from the `/proc/meminfo` file.
+///
+/// 从 `/proc/meminfo` 文件中读取并解析关键的内存统计信息。
+pub fn read_memory_stats() -> Result<MemoryStats, PipaCollectorError> {
+    let content = std::fs::read_to_string("/proc/meminfo")?;
+    parse_memory_stats_from_content(&content)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    /// Test sections for /proc/stat
     #[test]
     fn test_parse_cpu_stats_happy_path_two_spaces() {
         let line = "cpu  74608 2520 24433 1117073 6176 4054 0 0 0 0";
@@ -198,5 +285,49 @@ mod tests {
         let result = parse_cpu_stats_from_line(line);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), PipaCollectorError::Parse(_)));
+    }
+    /// Test sections for /proc/meminfo
+    #[test]
+    fn test_parse_memory_stats_happy_path() {
+        let content = "MemTotal:       65029028 kB\n\
+                       MemFree:        26013012 kB\n\
+                       MemAvailable:   50841208 kB\n\
+                       SomeOtherLine:  12345 kB\n\
+                       Buffers:            4504 kB\n\
+                       Cached:         25023892 kB";
+
+        let stats = parse_memory_stats_from_content(content).unwrap();
+
+        assert_eq!(stats.total, 65029028);
+        assert_eq!(stats.free, 26013012);
+        assert_eq!(stats.available, 50841208);
+        assert_eq!(stats.buffers, 4504);
+        assert_eq!(stats.cached, 25023892);
+    }
+
+    #[test]
+    fn test_parse_memory_stats_missing_fields() {
+        let content = "MemTotal:       65029028 kB\n\
+                       MemFree:        26013012 kB";
+
+        let result = parse_memory_stats_from_content(content);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), PipaCollectorError::MissingData(_)));
+    }
+
+    #[test]
+    fn test_parse_memory_stats_malformed_value() {
+        let content = "MemTotal:       not-a-number kB\n\
+                       MemFree:        26013012 kB\n\
+                       MemAvailable:   50841208 kB\n\
+                       Buffers:            4504 kB\n\
+                       Cached:         25023892 kB";
+
+        // This should succeed, because we skip malformed lines.
+        // It's a design choice: be robust against single corrupted lines.
+        // But since MemTotal is now missing, it will fail with MissingData.
+        let result = parse_memory_stats_from_content(content);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), PipaCollectorError::MissingData(_)));
     }
 }

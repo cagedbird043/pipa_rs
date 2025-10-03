@@ -38,6 +38,16 @@ Please check the [**ROADMAP.md**](ROADMAP.md) to see our development plan and fo
 
 请查阅 [**ROADMAP.md**](ROADMAP.md) 来了解我们的开发计划并跟踪项目进展。
 
+## Project Resources | 项目资源
+
+To understand the project in depth, please refer to the following documents:
+
+为了深入了解本项目，请参考以下文档：
+
+- [**ROADMAP.md**](./ROADMAP.md): See our development plan and follow the progress. (查看我们的开发计划并跟踪项目进展。)
+- [**DESIGN.md**](./DESIGN.md): Understand the core architecture and technical decisions. (理解核心架构与技术决策。)
+- [**CONTRIBUTING.md**](./CONTRIBUTING.md): Learn how to set up your environment and contribute to the project. (了解如何设置环境并为项目做出贡献。)
+
 ## License | 许可证
 
 This project is licensed under either of
