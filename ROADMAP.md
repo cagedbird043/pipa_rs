@@ -93,7 +93,7 @@ _Goal: Build a robust, dependency-free data collection engine._
 _目标：构建一个健壮的、无依赖的数据收集引擎。_
 
 - [x] **Task 1.1: Setup Cargo Workspace** | **任务 1.1：设置 Cargo 工作空间**: Initialize the project structure with `pipa_collector` and `pipa_cli` crates. | 使用 `pipa_collector` 和 `pipa_cli` crate 初始化项目结构。
-- [ ] **Task 1.2: Implement `system_stats` Module (the `sar` replacement)** | **任务 1.2：实现 `system_stats` 模块（`sar` 的替代品）**:
+- [x] **Task 1.2: Implement `system_stats` Module (the `sar` replacement)** | **任务 1.2：实现 `system_stats` 模块（`sar` 的替代品）**:
   - [x] In `pipa_collector`, create a module to parse `/proc/stat` for CPU utilization. | 在 `pipa_collector` 中创建一个模块来解析 `/proc/stat` 以获取 CPU 使用率。
   - [x] In `pipa_collector`, create a module to parse `/proc/meminfo` for memory stats. | 在 `pipa_collector` 中创建一个模块来解析 `/proc/meminfo` 以获取内存统计信息。
   - [x] In `pipa_cli`, create a `monitor` subcommand that periodically calls the `system_stats` functions and prints live system info, verifying the collector's functionality. | 在 `pipa_cli` 中创建一个 `monitor` 子命令，定期调用 `system_stats` 函数并打印实时系统信息，验证收集器的功能。
