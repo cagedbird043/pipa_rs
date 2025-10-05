@@ -15,7 +15,9 @@ perf-event-open-sys = "*"
 libc = "*"
 
 [dev-dependencies]
-tempfile = "3.10"
+tempfile = "*"
+assert_cmd = "*"
+predicates = "*"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
