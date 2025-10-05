@@ -178,7 +178,7 @@ fn run_stat(command: &[String]) -> Result<()> {
     // };
     const NUM_EVENTS: usize = 2;
     // 缓冲区大小：nr (1) + time_enabled (1) + time_running (1) + values (NUM_EVENTS)
-    const BUF_SIZE: usize = 3 + NUM_EVENTS;
+    const BUF_SIZE: usize = 3 + NUM_EVENTS * 2;
     let mut buf = [0u64; BUF_SIZE];
 
     // 为了安全地读取，我们将原始 fd 包装成一个 File，但之后必须 `mem::forget` 它，
@@ -194,7 +194,7 @@ fn run_stat(command: &[String]) -> Result<()> {
     }
 
     let cycles = buf[3];
-    let instructions = buf[4];
+    let instructions = buf[5];
     let cpi = if instructions > 0 { cycles as f64 / instructions as f64 } else { 0.0 };
 
     println!("\n--- Performance counters for `{:?}` ---\n", command);

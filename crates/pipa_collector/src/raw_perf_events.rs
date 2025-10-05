@@ -131,6 +131,8 @@ pub fn create_event_group(events: &[PerfEvent]) -> Result<EventGroup, PipaCollec
         if i == 0 {
             attrs.set_disabled(1);
             attrs.set_inherit(1);
+            attrs.read_format =
+                (sys::bindings::PERF_FORMAT_GROUP | sys::bindings::PERF_FORMAT_ID) as u64;
         }
 
         // The syscall is unsafe because it's a raw FFI call.
