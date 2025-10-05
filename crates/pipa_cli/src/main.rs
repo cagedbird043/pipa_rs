@@ -27,8 +27,8 @@ use crossterm::{
 use pipa_collector::raw_perf_events::{self, PerfEvent};
 use pipa_collector::system_stats::{CpuStats, MemoryStats};
 use std::fs::File;
+use std::io;
 use std::io::Read;
-use std::mem;
 use std::os::unix::io::FromRawFd;
 use std::process::Command;
 use std::{
@@ -147,10 +147,28 @@ fn run_stat(command: &[String]) -> Result<()> {
 
     // 3. Read the value from each counter's file descriptor separately.
     let read_counter = |counter: &raw_perf_events::Counter| -> Result<u64> {
-        let mut file = unsafe { File::from_raw_fd(counter.fd()) };
-        let mut buf = [0u8; 8]; // A single u64 is 8 bytes.
+        // This is the robust, idiomatic way to handle reading from a raw file
+        // descriptor that is owned by another structure.
+        //
+        // 1. Duplicate the file descriptor. `dup_fd` is a new, independent FD pointing
+        //    to the same underlying kernel file description.
+        let dup_fd = unsafe { libc::dup(counter.fd()) };
+        if dup_fd < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        // 2. The `File` now takes ownership of the *duplicated* FD. The original
+        //    `counter.fd()` is unaffected.
+        let mut file = unsafe { File::from_raw_fd(dup_fd) };
+        let mut buf = [0u8; 8];
+
+        // 3. Read from the file. If this fails and returns early, the `file` (and
+        //    `dup_fd`) will be correctly and safely closed by its Drop impl. The
+        //    original FD in `counter` remains open.
         file.read_exact(&mut buf)?;
-        mem::forget(file); // Prevent double-close
+
+        // 4. No more `mem::forget`! The `file` is dropped here, closing `dup_fd`, which
+        //    is exactly what we want.
         Ok(u64::from_le_bytes(buf))
     };
 
@@ -182,8 +200,8 @@ fn draw_ui<W: Write>(
     let mem_available_gib = mem_stats.available as f64 / 1024.0 / 1024.0;
     let mem_total_gib = mem_stats.total as f64 / 1024.0 / 1024.0;
 
-    // queue! batches commands for performance, then flush() writes them all at once.
-    // queue! 批量处理命令以提高性能，然后 flush() 一次性将它们全部写入。
+    // queue! batches commands for performance, then flush() writes them all at
+    // once. queue! 批量处理命令以提高性能，然后 flush() 一次性将它们全部写入。
     queue!(
         f,
         // First, clear the entire screen.
@@ -335,8 +353,8 @@ mod tests {
         assert!(output.contains("Total:"));
         assert!(output.contains("16.00 GiB"));
 
-        // We could even test for specific ANSI codes if we wanted to be extremely precise
-        // For example, does it start with the "clear screen" code?
+        // We could even test for specific ANSI codes if we wanted to be extremely
+        // precise For example, does it start with the "clear screen" code?
         assert!(output.starts_with("\x1B[2J"));
     }
 }

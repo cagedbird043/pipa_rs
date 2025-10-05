@@ -61,8 +61,9 @@ impl Drop for Counter {
     }
 }
 
-/// Creates a single, inheritable performance counter for a command to be executed.
-/// This function precisely replicates the parameters used by `perf stat`.
+/// Creates a single, inheritable performance counter for a command to be
+/// executed. This function precisely replicates the parameters used by `perf
+/// stat`.
 pub fn create_counter_for_command(event: PerfEvent) -> Result<Counter, PipaCollectorError> {
     let mut attrs = sys::bindings::perf_event_attr {
         size: std::mem::size_of::<sys::bindings::perf_event_attr>() as u32,
