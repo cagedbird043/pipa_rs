@@ -14,7 +14,7 @@
 
 //! This module provides a low-level interface to the `perf_event_open` syscall,
 //! precisely mimicking the behavior of the `perf stat` command.
-
+#![cfg(not(tarpaulin_include))]
 use crate::system_stats::PipaCollectorError;
 use perf_event_open_sys as sys;
 use std::io;

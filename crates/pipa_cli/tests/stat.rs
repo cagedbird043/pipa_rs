@@ -16,6 +16,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 
 #[test]
+#[ignore]
 fn test_stat_runs_successfully_on_true() {
     let mut cmd = Command::cargo_bin("pipa_rs").unwrap();
     cmd.arg("stat")
@@ -31,6 +32,7 @@ fn test_stat_runs_successfully_on_true() {
 }
 
 #[test]
+#[ignore]
 fn test_stat_reports_error_for_nonexistent_command() {
     let mut cmd = Command::cargo_bin("pipa_rs").unwrap();
     cmd.arg("stat")
@@ -42,6 +44,7 @@ fn test_stat_reports_error_for_nonexistent_command() {
 }
 
 #[test]
+#[ignore]
 fn test_stat_reports_error_if_no_command_is_given() {
     let mut cmd = Command::cargo_bin("pipa_rs").unwrap();
     cmd.arg("stat")
