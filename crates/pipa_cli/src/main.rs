@@ -48,6 +48,14 @@ enum Commands {
         #[arg(short, long, default_value_t = 1)]
         interval: u64,
     },
+    /// Execute a command and collect performance counter statistics.
+    /// 执行一个命令并收集性能计数器统计信息。
+    Stat {
+        /// The command to execute and profile.
+        /// 需要执行和分析的命令。
+        #[arg(required = true, last = true)]
+        command: Vec<String>,
+    },
 }
 
 /// Helper function to set up the terminal for TUI mode.
@@ -101,6 +109,28 @@ fn run_monitor(interval: u64) -> Result<()> {
     }
 
     restore_terminal(&mut f)?;
+    Ok(())
+}
+
+/// Main application logic for the stat subcommand.
+/// `stat` 子命令的主应用逻辑。
+#[cfg(not(tarpaulin_include))]
+fn run_stat(command: &[String]) -> Result<()> {
+    if command.is_empty() {
+        // This case should be prevented by clap's `required = true`, but we handle it for robustness.
+        // 这种情况应该被 clap 的 `required = true` 阻止，但为了健壮性我们还是处理一下。
+        anyhow::bail!("No command provided to `stat`.");
+    }
+
+    println!("Executing command: {:?}", command);
+    // TODO:
+    // 1. Call `pipa_collector::raw_perf_events::create_event_group`.
+    // 2. Use `std::process::Command` to set up the child process.
+    // 3. Enable the event group via `ioctl` right before spawning the child.
+    // 4. Spawn the child and wait for it to complete.
+    // 5. Read the counter values from the group leader file descriptor.
+    // 6. Print the results.
+
     Ok(())
 }
 
@@ -190,6 +220,9 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Monitor { interval } => {
             run_monitor(interval)?;
+        }
+        Commands::Stat { command } => {
+            run_stat(&command)?;
         }
     }
     Ok(())
