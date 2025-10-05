@@ -12,6 +12,7 @@ categories.workspace = true
 # Provides raw, unsafe bindings to the perf_event_open syscall.
 # This is necessary for creating inheritable counter groups for child processes.
 perf-event-open-sys = "*"
+libc = "*"
 
 [dev-dependencies]
 tempfile = "3.10"
