@@ -24,7 +24,15 @@ use crossterm::{
     execute, queue, style,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use pipa_collector::raw_perf_events::{self, PerfEvent};
 use pipa_collector::system_stats::{CpuStats, MemoryStats};
+use std::fs::File;
+use std::io;
+use std::io::Read;
+use std::mem;
+use std::os::unix::io::FromRawFd;
+use std::os::unix::process::CommandExt;
+use std::process::Command;
 use std::{
     io::{Stdout, Write, stdout},
     time::Duration,
@@ -122,14 +130,78 @@ fn run_stat(command: &[String]) -> Result<()> {
         anyhow::bail!("No command provided to `stat`.");
     }
 
-    println!("Executing command: {:?}", command);
-    // TODO:
-    // 1. Call `pipa_collector::raw_perf_events::create_event_group`.
-    // 2. Use `std::process::Command` to set up the child process.
-    // 3. Enable the event group via `ioctl` right before spawning the child.
-    // 4. Spawn the child and wait for it to complete.
-    // 5. Read the counter values from the group leader file descriptor.
-    // 6. Print the results.
+    // 1. 定义我们想要监控的事件。
+    let events = [PerfEvent::Cycles, PerfEvent::Instructions];
+    let group = raw_perf_events::create_event_group(&events)?;
+    let leader_fd = group.leader_fd();
+
+    let program = &command[0];
+    let args = &command[1..];
+
+    // 2. 设置子进程命令。
+    let mut cmd = Command::new(program);
+    cmd.args(args);
+
+    // 3. 使用 `pre_exec` 在子进程 `exec` 之前启用计数器。
+    // 这是关键一步：`pre_exec` 允许我们在 `fork` 之后、`exec` 之前运行闭包。
+    // 这确保了只有即将执行的目标程序才会被计数。
+    unsafe {
+        cmd.pre_exec(move || {
+            // 在子进程中,我们通过 ioctl 启用整个事件组。
+            let ret = libc::ioctl(
+                leader_fd,
+                perf_event_open_sys::bindings::ENABLE as libc::c_ulong,
+                perf_event_open_sys::bindings::PERF_IOC_FLAG_GROUP,
+            );
+            if ret < 0 {
+                // 如果 ioctl 失败,返回一个错误,这将阻止子进程启动。
+                return Err(io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    } // 4. 执行命令并等待其完成。
+    let status = cmd
+        .status()
+        .map_err(|e| anyhow::anyhow!("Failed to execute command `{}`: {}", program, e))?;
+
+    if !status.success() {
+        eprintln!("Warning: Command exited with non-zero status: {}", status);
+    }
+
+    // 5. 从组长文件描述符中读取计数器结果。
+    // `perf_event` 的 `read` 格式是：
+    // struct {
+    //   u64 nr;            /* Number of events in the group */
+    //   u64 time_enabled;  /* Time the group was enabled */
+    //   u64 time_running;  /* Time the group was running */
+    //   u64 values[nr];    /* The counter values */
+    // };
+    const NUM_EVENTS: usize = 2;
+    // 缓冲区大小：nr (1) + time_enabled (1) + time_running (1) + values (NUM_EVENTS)
+    const BUF_SIZE: usize = 3 + NUM_EVENTS;
+    let mut buf = [0u64; BUF_SIZE];
+
+    // 为了安全地读取，我们将原始 fd 包装成一个 File，但之后必须 `mem::forget` 它，
+    // 否则 File 的 Drop 实现会关闭 fd，导致我们自己的 EventGroup 在 Drop 时二次关闭。
+    let mut file = unsafe { File::from_raw_fd(leader_fd) };
+    file.read_exact(bytemuck::bytes_of_mut(&mut buf))?;
+    mem::forget(file);
+
+    // 6. 解析并打印结果。
+    let nr = buf[0];
+    if nr != NUM_EVENTS as u64 {
+        anyhow::bail!("Unexpected number of events read. Expected {}, got {}.", NUM_EVENTS, nr);
+    }
+
+    let cycles = buf[3];
+    let instructions = buf[4];
+    let cpi = if instructions > 0 { cycles as f64 / instructions as f64 } else { 0.0 };
+
+    println!("\n--- Performance counters for `{:?}` ---\n", command);
+    println!("{:<20}: {}", "Cycles", cycles);
+    println!("{:<20}: {}", "Instructions", instructions);
+    println!("{:<20}: {:.2}", "CPI", cpi);
+    println!("\n------------------------------------------\n");
 
     Ok(())
 }
