@@ -9,6 +9,9 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+# Provides raw, unsafe bindings to the perf_event_open syscall.
+# This is necessary for creating inheritable counter groups for child processes.
+perf-event-open-sys = "*"
 
 [dev-dependencies]
 tempfile = "3.10"
