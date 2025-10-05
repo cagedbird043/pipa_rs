@@ -11,19 +11,19 @@ description = "A Native Performance Analytics Toolchain for Linux, built in Rust
 # 让我们的 CLI 可以调用 collector 中的函数
 pipa_collector = { path = "../pipa_collector" }
 # 强大的命令行参数解析库
-clap = { version = "4.5", features = ["derive"] }
+clap = { workspace = true }
 # 优雅的应用程序级错误处理
-anyhow = "1.0"
-crossterm = "*"
+anyhow = { workspace = true }
+crossterm = { workspace = true }
 # Provides raw FFI bindings to core C libraries, needed for calling `ioctl(fd, ...)`.
-libc = "*"
-bytemuck = "*"
-perf-event-open-sys = "*"
+libc = { workspace = true }
+bytemuck = { workspace = true }
+perf-event-open-sys = { workspace = true }
 
 
 [dev-dependencies]
-assert_cmd = "*"
-predicates = "*"
+assert_cmd = { workspace = true }
+predicates = { workspace = true }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

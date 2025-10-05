@@ -11,13 +11,13 @@ categories.workspace = true
 [dependencies]
 # Provides raw, unsafe bindings to the perf_event_open syscall.
 # This is necessary for creating inheritable counter groups for child processes.
-perf-event-open-sys = "*"
-libc = "*"
+perf-event-open-sys = { workspace = true }
+libc = { workspace = true }
 
 [dev-dependencies]
-tempfile = "*"
-assert_cmd = "*"
-predicates = "*"
+tempfile = { workspace = true }
+assert_cmd = { workspace = true }
+predicates = { workspace = true }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
