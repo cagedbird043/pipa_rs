@@ -97,10 +97,10 @@ _目标：构建一个健壮的、无依赖的数据收集引擎。_
   - [x] In `pipa_collector`, create a module to parse `/proc/stat` for CPU utilization. | 在 `pipa_collector` 中创建一个模块来解析 `/proc/stat` 以获取 CPU 使用率。
   - [x] In `pipa_collector`, create a module to parse `/proc/meminfo` for memory stats. | 在 `pipa_collector` 中创建一个模块来解析 `/proc/meminfo` 以获取内存统计信息。
   - [x] In `pipa_cli`, create a `monitor` subcommand that periodically calls the `system_stats` functions and prints live system info, verifying the collector's functionality. | 在 `pipa_cli` 中创建一个 `monitor` 子命令，定期调用 `system_stats` 函数并打印实时系统信息，验证收集器的功能。
-- [ ] **Task 1.3: Implement `perf_events` Counting Mode (the `perf stat` replacement)** | **任务 1.3：实现 `perf_events` 计数模式（`perf stat` 的替代品）**:
-  - [ ] Integrate the `perf-event` crate into `pipa_collector`. | 将 `perf-event` crate 集成到 `pipa_collector` 中。
-  - [ ] Implement a function to create and manage a group of performance counters for a given process (`pid`) or system-wide (`-1`). | 实现一个函数来为给定进程（`pid`）或系统级（`-1`）创建和管理一组性能计数器。
-  - [ ] In `pipa_cli`, create a `stat` subcommand (`pipa-rs stat -- <command>`) that launches a command, collects total `cycles` and `instructions`, and prints the results upon completion. | 在 `pipa_cli` 中创建一个 `stat` 子命令（`pipa-rs stat -- <command>`），启动一个命令，收集总的 `cycles` 和 `instructions`，并在完成时打印结果。
+- [x] **Task 1.3: Implement `perf_events` Counting Mode (the `perf stat` replacement)** | **任务 1.3：实现 `perf_events` 计数模式（`perf stat` 的替代品）**:
+  - [ ] ~~Integrate the `perf-event` crate into `pipa_collector`. | 将 `perf-event` crate 集成到 `pipa_collector` 中。~~(Deprecated, use raw syscalls instead)
+  - [x] Implement a function to create and manage a group of performance counters for a given process (`pid`) or system-wide (`-1`). | 实现一个函数来为给定进程（`pid`）或系统级（`-1`）创建和管理一组性能计数器。
+  - [x] In `pipa_cli`, create a `stat` subcommand (`pipa-rs stat -- <command>`) that launches a command, collects total `cycles` and `instructions`, and prints the results upon completion. | 在 `pipa_cli` 中创建一个 `stat` 子命令（`pipa-rs stat -- <command>`），启动一个命令，收集总的 `cycles` 和 `instructions`，并在完成时打印结果。
 - [ ] **Task 1.4: Implement `perf_events` Sampling Mode (the `perf record` foundation)** | **任务 1.4：实现 `perf_events` 采样模式（`perf record` 的基础）**:
   - [ ] In `pipa_collector`, configure `perf_event` for sampling with a ring buffer (`mmap`). | 在 `pipa_collector` 中配置 `perf_event` 以使用环形缓冲区（`mmap`）进行采样。
   - [ ] Implement the logic to read raw `PERF_RECORD_SAMPLE` events from the ring buffer. | 实现从环形缓冲区读取原始 `PERF_RECORD_SAMPLE` 事件的逻辑。

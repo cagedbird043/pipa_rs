@@ -24,7 +24,13 @@ use crossterm::{
     execute, queue, style,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use pipa_collector::raw_perf_events::{self, PerfEvent};
 use pipa_collector::system_stats::{CpuStats, MemoryStats};
+use std::fs::File;
+use std::io;
+use std::io::Read;
+use std::os::unix::io::FromRawFd;
+use std::process::Command;
 use std::{
     io::{Stdout, Write, stdout},
     time::Duration,
@@ -47,6 +53,14 @@ enum Commands {
         /// 刷新间隔（秒）。
         #[arg(short, long, default_value_t = 1)]
         interval: u64,
+    },
+    /// Execute a command and collect performance counter statistics.
+    /// 执行一个命令并收集性能计数器统计信息。
+    Stat {
+        /// The command to execute and profile.
+        /// 需要执行和分析的命令。
+        #[arg(required = true, last = true)]
+        command: Vec<String>,
     },
 }
 
@@ -104,6 +118,75 @@ fn run_monitor(interval: u64) -> Result<()> {
     Ok(())
 }
 
+/// Main application logic for the stat subcommand.
+/// `stat` 子命令的主应用逻辑。
+#[cfg(not(tarpaulin_include))]
+fn run_stat(command: &[String]) -> Result<()> {
+    if command.is_empty() {
+        anyhow::bail!("No command provided to `stat`.");
+    }
+
+    // 1. Create INDEPENDENT counters, just like `perf stat` does.
+    let cycles_counter = raw_perf_events::create_counter_for_command(PerfEvent::Cycles)?;
+    let instructions_counter =
+        raw_perf_events::create_counter_for_command(PerfEvent::Instructions)?;
+
+    let program = &command[0];
+    let args = &command[1..];
+
+    // 2. Set up and run the child process.
+    // NO MORE pre_exec hook! The kernel handles enabling the counters for us.
+    let status = Command::new(program)
+        .args(args)
+        .status()
+        .map_err(|e| anyhow::anyhow!("Failed to execute command `{}`: {}", program, e))?;
+
+    if !status.success() {
+        eprintln!("Warning: Command exited with non-zero status: {}", status);
+    }
+
+    // 3. Read the value from each counter's file descriptor separately.
+    let read_counter = |counter: &raw_perf_events::Counter| -> Result<u64> {
+        // This is the robust, idiomatic way to handle reading from a raw file
+        // descriptor that is owned by another structure.
+        //
+        // 1. Duplicate the file descriptor. `dup_fd` is a new, independent FD pointing
+        //    to the same underlying kernel file description.
+        let dup_fd = unsafe { libc::dup(counter.fd()) };
+        if dup_fd < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        // 2. The `File` now takes ownership of the *duplicated* FD. The original
+        //    `counter.fd()` is unaffected.
+        let mut file = unsafe { File::from_raw_fd(dup_fd) };
+        let mut buf = [0u8; 8];
+
+        // 3. Read from the file. If this fails and returns early, the `file` (and
+        //    `dup_fd`) will be correctly and safely closed by its Drop impl. The
+        //    original FD in `counter` remains open.
+        file.read_exact(&mut buf)?;
+
+        // 4. No more `mem::forget`! The `file` is dropped here, closing `dup_fd`, which
+        //    is exactly what we want.
+        Ok(u64::from_le_bytes(buf))
+    };
+
+    let cycles = read_counter(&cycles_counter)?;
+    let instructions = read_counter(&instructions_counter)?;
+
+    // 4. Calculate and print the results.
+    let cpi = if instructions > 0 { cycles as f64 / instructions as f64 } else { 0.0 };
+
+    println!("\n--- Performance counters for `{:?}` ---\n", command);
+    println!("{:<20}: {}", "Cycles", cycles);
+    println!("{:<20}: {}", "Instructions", instructions);
+    println!("{:<20}: {:.2}", "CPI", cpi);
+    println!("\n------------------------------------------\n");
+
+    Ok(())
+}
+
 /// Renders the UI frame to the terminal using absolute cursor positioning.
 /// 使用绝对光标定位将 UI 帧渲染到终端。
 #[cfg(not(tarpaulin_include))]
@@ -117,8 +200,8 @@ fn draw_ui<W: Write>(
     let mem_available_gib = mem_stats.available as f64 / 1024.0 / 1024.0;
     let mem_total_gib = mem_stats.total as f64 / 1024.0 / 1024.0;
 
-    // queue! batches commands for performance, then flush() writes them all at once.
-    // queue! 批量处理命令以提高性能，然后 flush() 一次性将它们全部写入。
+    // queue! batches commands for performance, then flush() writes them all at
+    // once. queue! 批量处理命令以提高性能，然后 flush() 一次性将它们全部写入。
     queue!(
         f,
         // First, clear the entire screen.
@@ -190,6 +273,9 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Monitor { interval } => {
             run_monitor(interval)?;
+        }
+        Commands::Stat { command } => {
+            run_stat(&command)?;
         }
     }
     Ok(())
@@ -267,8 +353,8 @@ mod tests {
         assert!(output.contains("Total:"));
         assert!(output.contains("16.00 GiB"));
 
-        // We could even test for specific ANSI codes if we wanted to be extremely precise
-        // For example, does it start with the "clear screen" code?
+        // We could even test for specific ANSI codes if we wanted to be extremely
+        // precise For example, does it start with the "clear screen" code?
         assert!(output.starts_with("\x1B[2J"));
     }
 }

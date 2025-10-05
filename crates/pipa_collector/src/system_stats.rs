@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! This module is responsible for collecting system-wide statistics by parsing the `/proc` filesystem.
-//! It serves as a replacement for tools like `sar`.
+//! This module is responsible for collecting system-wide statistics by parsing
+//! the `/proc` filesystem. It serves as a replacement for tools like `sar`.
 //!
 //! 本模块负责通过解析 `/proc` 文件系统来收集系统级统计信息。
 //! 它的功能是替代像 `sar` 这样的工具。
@@ -29,8 +29,9 @@ use std::num::ParseIntError;
 /// 这个枚举允许我们进行精确的错误处理。
 #[derive(Debug)]
 pub enum PipaCollectorError {
-    /// Represents an I/O error that occurred while reading a file (e.g., from `/proc`).
-    /// 代表在读取文件时发生的 I/O 错误（例如，从 `/proc` 读取时）。
+    /// Represents an I/O error that occurred while reading a file (e.g., from
+    /// `/proc`). 代表在读取文件时发生的 I/O 错误（例如，从 `/proc`
+    /// 读取时）。
     Io(io::Error),
     /// Represents an error that occurred while parsing a string into a number.
     /// 代表在将字符串解析为数字时发生的错误。
@@ -57,8 +58,8 @@ impl fmt::Display for PipaCollectorError {
     }
 }
 
-/// Implementing the standard Error trait for interoperability with other error types.
-/// 为了与其他错误类型互操作，我们实现了标准的 Error trait。
+/// Implementing the standard Error trait for interoperability with other error
+/// types. 为了与其他错误类型互操作，我们实现了标准的 Error trait。
 impl std::error::Error for PipaCollectorError {
     #[cfg(not(tarpaulin_include))]
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
@@ -70,8 +71,8 @@ impl std::error::Error for PipaCollectorError {
     }
 }
 
-// Boilerplate to allow easy conversion from standard errors using the `?` operator.
-// 使用 `?` 操作符简化从标准错误类型到自定义错误类型的转换的模板代码。
+// Boilerplate to allow easy conversion from standard errors using the `?`
+// operator. 使用 `?` 操作符简化从标准错误类型到自定义错误类型的转换的模板代码。
 impl From<io::Error> for PipaCollectorError {
     fn from(err: io::Error) -> Self {
         PipaCollectorError::Io(err)
@@ -93,7 +94,8 @@ impl From<ParseIntError> for PipaCollectorError {
 pub struct CpuStats {
     /// Time spent in user mode. / 在用户模式下花费的时间。
     pub user: u64,
-    /// Time spent in user mode with low priority (nice). / 在低优先级用户模式下花费的时间 (nice)。
+    /// Time spent in user mode with low priority (nice). /
+    /// 在低优先级用户模式下花费的时间 (nice)。
     pub nice: u64,
     /// Time spent in system mode. / 在系统模式下花费的时间。
     pub system: u64,
@@ -105,7 +107,8 @@ pub struct CpuStats {
     pub irq: u64,
     /// Time servicing softirqs. / 服务于软中断的时间。
     pub softirq: u64,
-    /// Stolen time, which is the time spent in other operating systems when running in a virtualized environment.
+    /// Stolen time, which is the time spent in other operating systems when
+    /// running in a virtualized environment.
     /// 被偷走的时间，即在虚拟化环境中运行时，在其他操作系统中花费的时间。
     pub steal: u64,
     /// Time spent running a virtual CPU for guest operating systems.
@@ -116,8 +119,9 @@ pub struct CpuStats {
     pub guest_nice: u64,
 }
 
-/// Parses a single line from `/proc/stat` (the aggregated "cpu" line) into a `CpuStats` struct.
-/// This function is kept private and pure (no I/O) to make it easily testable.
+/// Parses a single line from `/proc/stat` (the aggregated "cpu" line) into a
+/// `CpuStats` struct. This function is kept private and pure (no I/O) to make
+/// it easily testable.
 ///
 /// 将 `/proc/stat` 的单行（聚合的 "cpu" 行）解析为 `CpuStats` 结构体。
 /// 这个函数保持私有和纯粹（无 I/O），以便于测试。
@@ -135,8 +139,8 @@ fn parse_cpu_stats_from_line(line: &str) -> Result<CpuStats, PipaCollectorError>
         };
     }
 
-    // `/proc/stat` might have one or two spaces after "cpu". `strip_prefix` handles one case,
-    // and `or_else` provides a fallback to try the other.
+    // `/proc/stat` might have one or two spaces after "cpu". `strip_prefix` handles
+    // one case, and `or_else` provides a fallback to try the other.
     let trimmed =
         line.strip_prefix("cpu  ").or_else(|| line.strip_prefix("cpu ")).ok_or_else(|| {
             PipaCollectorError::InvalidFormat(
@@ -196,7 +200,8 @@ pub struct MemoryStats {
     pub total: u64,
     /// RAM left unused by the system. / 系统未使用的 RAM。
     pub free: u64,
-    /// An estimate of how much memory is available for starting new applications, without swapping.
+    /// An estimate of how much memory is available for starting new
+    /// applications, without swapping.
     /// 可用于启动新应用程序的估计内存量（无需交换）。
     pub available: u64,
     /// Memory used by block device buffers. / 块设备缓冲区使用的内存。
